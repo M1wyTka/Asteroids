@@ -5,6 +5,10 @@
 //
 
 #include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <memory.h>
+#include <cmath>
 
 #define SCREEN_WIDTH 1024
 #define SCREEN_HEIGHT 768
