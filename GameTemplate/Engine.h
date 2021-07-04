@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <memory.h>
 #include <cmath>
+#include <vector>
 
 #define SCREEN_WIDTH 1024
 #define SCREEN_HEIGHT 768
