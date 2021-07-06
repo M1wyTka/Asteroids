@@ -10,6 +10,10 @@
 #include <memory.h>
 #include <cmath>
 #include <vector>
+#include <map>
+#include <algorithm>
+#include <string>
+
 
 #define SCREEN_WIDTH 1024
 #define SCREEN_HEIGHT 768
