@@ -227,7 +227,7 @@ public:
 			AdjustByDimensions(BoardModel[i], F_Obj.GetPosition(), F_Obj.GetAngle(), F_Obj.GetSize());
 		}
 
-		DrawPolygon(&BoardModel, Color);
+		DrawPolygon(BoardModel, Color);
 	}
 
 	void Clear() 
@@ -261,20 +261,20 @@ private:
 		}
 	}
 
-	void DrawPolygon(const std::vector<Vec2>* Model, uint32_t Color)
+	void DrawPolygon(const std::vector<Vec2>& Model, uint32_t Color)
 	{
-		if (Model->size() <= 0)
+		if (Model.size() <= 0)
 			return;
 
-		if (Model->size() == 1)
-			DrawPoint((*Model)[0].x, (*Model)[0].y, Color);
+		if (Model.size() == 1)
+			DrawPoint(Model[0].x, Model[0].y, Color);
 
-		for (int i = 0; i < Model->size(); i++)
+		for (int i = 0; i < Model.size(); i++)
 		{
-			if (i == Model->size() - 1)
-				DrawLine((*Model)[i].x, (*Model)[i].y, (*Model)[0].x, (*Model)[0].y, Color);
+			if (i == Model.size() - 1)
+				DrawLine(Model[i].x, Model[i].y, Model[0].x, Model[0].y, Color);
 			else
-				DrawLine((*Model)[i].x, (*Model)[i].y, (*Model)[i + 1].x, (*Model)[i + 1].y, Color);
+				DrawLine(Model[i].x, Model[i].y, Model[i + 1].x, Model[i + 1].y, Color);
 		}
 	}
 
