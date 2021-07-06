@@ -163,6 +163,7 @@ class Gamefield
 public:
 	uint32_t const m_Obstacle_Color = 0xFF0000FF;
 	uint32_t const m_Player_Color = 0x0000FFFF;
+	uint32_t const m_Invincibility_Color = 0xFFFF00FF;
 	uint32_t const m_Bullet_Color = 0x00FF00FF;
 	uint32_t const m_Text_Color = 0x0FFFF0FF;
 
@@ -197,6 +198,23 @@ public:
 			{
 				OffsetModel[j] = OffsetModel[j] * 10;
 				OffsetModel[j] += step_offset * i + offset_y + offset_x;
+			}
+
+			DrawFigure(OffsetModel, m_Text_Color);
+		}
+	}
+
+	void DrawText(std::string Text, const Vec2& offset) 
+	{
+		Vec2 step_offset = Vec2(15.0f, 0.0f);
+
+		for (int i = 0; i < Text.length(); i++)
+		{
+			std::vector<Vec2> OffsetModel = PixelNumbers[Text[i]];
+			for (int j = 0; j < OffsetModel.size(); j++)
+			{
+				OffsetModel[j] = OffsetModel[j] * 10;
+				OffsetModel[j] += step_offset * i + offset;
 			}
 
 			DrawFigure(OffsetModel, m_Text_Color);
@@ -284,7 +302,7 @@ public:
 		if (x1 > x0) 
 		{
 			last_y = y0;
-			for (int i = x0; i < x1; i++)
+			for (int i = x0; i < x1+1; i++)
 			{
 				float y = round(k*i + b);
 				if (y > last_y)
@@ -300,7 +318,7 @@ public:
 		else 
 		{
 			last_y = y1;
-			for (int i = x1; i < x0; i++)
+			for (int i = x1; i < x0+1; i++)
 			{
 				float y = round(k*i + b);
 				if (y > last_y)
@@ -344,6 +362,7 @@ class GameManager
 private:
 	Gamefield m_GameBoard;
 	int Score;
+	int Health;
 
 	Shuttle m_Player;
 	std::vector<Flying_Object> m_Asteroids;
@@ -352,19 +371,25 @@ private:
 	const std::vector<Vec2> m_Asteroid_Model = { Vec2(-1.0f, -1.0f), Vec2(-1.0f, 1.0f), Vec2(1.0f, 1.0f), Vec2(1.0f, -1.0f) };
 	const std::vector<Vec2> m_Bullet_Model = { Vec2(-1.0f, -1.0f), Vec2(-1.0f, 1.0f), Vec2(1.0f, 1.0f), Vec2(1.0f, -1.0f) };
 
-	Vec2 SpawnPoint;
 	float ShootCD;
 	float ShootTimer;
+
+	float InvicibilityOnHit;
+	bool isInvincible;
+	float InvincibilityTimer;
 
 public:
 	GameManager(uint32_t* board) : m_GameBoard(Gamefield(board))
 	{
 		m_Player = Shuttle(Vec2(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2), Vec2(), 10, 0.0f, 50);
-		SpawnPoint = Vec2(100, 100);
-		m_Asteroids.push_back(CreateAsteroid(SpawnPoint, 20));
+		SpawnAsteroidField();
+		
 		ShootCD = 1.0f;
+		InvicibilityOnHit = 3.0f;
 		ShootTimer = 0.0f;
 		Score = 0;
+		Health = 5;
+		isInvincible = false;
 	}
 
 	void ReadInputs(float dt) 
@@ -411,15 +436,20 @@ public:
 		UpdatePlayerPosition(dt);
 		UpdateBulletPositions(dt);
 		UpdateAsteroidPositions(dt);
-		CheckInteractions();
+		CheckInteractions(dt);
 	}
 
 	void DrawGame() 
 	{
-		m_GameBoard.DrawFlyingObject(m_Player, m_GameBoard.m_Player_Color);
+		if(isInvincible)
+			m_GameBoard.DrawFlyingObject(m_Player, m_GameBoard.m_Invincibility_Color);
+		else
+			m_GameBoard.DrawFlyingObject(m_Player, m_GameBoard.m_Player_Color);
+
 		m_GameBoard.DrawFlyingObjects(m_Bullets, m_GameBoard.m_Bullet_Color);
 		m_GameBoard.DrawFlyingObjects(m_Asteroids, m_GameBoard.m_Obstacle_Color);
 		m_GameBoard.DrawScore(Score);
+		m_GameBoard.DrawText(std::to_string(Health), Vec2(5.0f, 30.0f));
 	}
 
 private:
@@ -455,7 +485,7 @@ private:
 		}
 	}
 
-	void CheckInteractions()
+	void CheckInteractions(float dt)
 	{
 		std::vector<Flying_Object>::iterator bullet = m_Bullets.begin();
 
@@ -470,8 +500,32 @@ private:
 		}
 		
 		if (std::any_of(m_Asteroids.begin(), m_Asteroids.end(), [&](const Flying_Object& a) {return CheckCollision(a.GetPosition(), m_Player.GetPosition(), (a.GetSize() + m_Player.GetSize())); }))
+		{	
+			if (!isInvincible) 
+			{
+				Health--;
+				if (Health < 1)
+					Loose();
+				else 
+				{
+					isInvincible = true;
+					InvincibilityTimer = 0;
+				}
+			}
+		}
+		if (isInvincible)
 		{
-			Loose();
+			InvincibilityTimer += dt;
+			if (InvincibilityTimer > InvicibilityOnHit)
+			{
+				InvincibilityTimer = 0;
+				isInvincible = false;
+			}
+		}
+
+		if (m_Asteroids.empty()) 
+		{
+			SpawnAsteroidField();
 		}
 	}
 
@@ -520,6 +574,27 @@ private:
 		m_Asteroids.clear();
 		m_Bullets.clear();
 		Score = 0;
+		Health = 5;
+		InvincibilityTimer = 0;
+		isInvincible = false;
+	}
+
+	void SpawnAsteroidField() 
+	{
+		
+
+		for (int i = 0; i < 5; i++) 
+		{
+			int randPoint = int((float(rand()) / float(RAND_MAX / float(SCREEN_WIDTH * 2 + SCREEN_HEIGHT * 2))));
+			if (randPoint < SCREEN_WIDTH)
+				m_Asteroids.push_back(CreateAsteroid(Vec2(randPoint, 0.0f), 20));
+			else if (randPoint < SCREEN_WIDTH + SCREEN_HEIGHT)
+				m_Asteroids.push_back(CreateAsteroid(Vec2(SCREEN_WIDTH - 1, randPoint - SCREEN_WIDTH), 20));
+			else if (randPoint < 2 * SCREEN_WIDTH + SCREEN_HEIGHT)
+				m_Asteroids.push_back(CreateAsteroid(Vec2(randPoint - SCREEN_WIDTH - SCREEN_HEIGHT, SCREEN_HEIGHT - 1), 20));
+			else if (randPoint < 2 * SCREEN_WIDTH + 2 * SCREEN_HEIGHT)
+				m_Asteroids.push_back(CreateAsteroid(Vec2(0.0f, randPoint - 2 * SCREEN_WIDTH - SCREEN_HEIGHT), 20));
+		}
 	}
 
 	void LoopCoordinates(float in_x, float in_y, float& out_x, float& out_y)
