@@ -5,14 +5,6 @@
 //
 
 #include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <memory.h>
-#include <cmath>
-#include <vector>
-#include <map>
-#include <algorithm>
-#include <string>
 
 
 #define SCREEN_WIDTH 1024
