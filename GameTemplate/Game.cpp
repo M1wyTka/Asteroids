@@ -353,7 +353,7 @@ private:
 	}
 };
 
-
+// Manager to move all and check interactions
 class GameManager 
 {
 private:
@@ -373,6 +373,7 @@ private:
 	std::vector<Flying_Object> m_Asteroids;
 	std::vector<Flying_Object> m_Bullets;
 
+	// Rectangles
 	const std::vector<Vec2> m_Asteroid_Model = { Vec2(-1.0f, -1.0f), Vec2(-1.0f, 1.0f), Vec2(1.0f, 1.0f), Vec2(1.0f, -1.0f) };
 	const std::vector<Vec2> m_Bullet_Model = { Vec2(-1.0f, -1.0f), Vec2(-1.0f, 1.0f), Vec2(1.0f, 1.0f), Vec2(1.0f, -1.0f) };
 
