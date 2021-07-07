@@ -25,6 +25,7 @@
 
 #define PI 3.14159265
 
+// 2d Vector with some needed overloads
 struct Vec2 
 {
 	float x, y;
@@ -62,6 +63,7 @@ struct Vec2
 
 };
 
+// Simple object with parameters for 2d movement
 class Flying_Object
 {
 protected:
@@ -128,7 +130,7 @@ public:
 	}
 };
 
-
+// Flying object with ability to limit speed and change it using acceletarion
 class Shuttle : public Flying_Object
 {
 private:
@@ -196,6 +198,7 @@ public:
 
 	void DrawText(std::string Text, const Vec2& offset) 
 	{
+		// Draw text based on known set of lines
 		Vec2 step_offset = Vec2(15.0f, 0.0f);
 
 		for (int i = 0; i < Text.length(); i++)
@@ -221,6 +224,7 @@ public:
 
 	void DrawFlyingObject(Flying_Object& F_Obj, uint32_t Color)
 	{
+		// Get set of dots, adjust their position, pass to draw
 		std::vector<Vec2> BoardModel = F_Obj.GetModel();
 		for (int i = 0; i < BoardModel.size(); i++)
 		{
@@ -238,6 +242,7 @@ public:
 private:
 	void AdjustByDimensions(Vec2& vec, const Vec2& offset, float angle, int size)
 	{
+		// Basically matrix-vector multiplication + translation vector
 		float x = vec.x * size;
 		float y = vec.y * size;
 		float CosF = cosf(angle*PI / 180);
@@ -249,6 +254,7 @@ private:
 
 	void DrawFigure(const std::vector<Vec2>& Model, uint32_t Color)
 	{
+		// Connect set of dots
 		if (Model.size() <= 0)
 			return;
 
@@ -263,6 +269,7 @@ private:
 
 	void DrawPolygon(const std::vector<Vec2>& Model, uint32_t Color)
 	{
+		// Connect set of dots but last is connected to first if enough dots are present
 		if (Model.size() <= 0)
 			return;
 
@@ -280,6 +287,7 @@ private:
 
 	void DrawLine(int x0, int y0, int x1, int y1, uint32_t Color)
 	{
+		// Naive calculation of line formula (y = kx + b) 
 		if (x0 == x1)
 		{
 			if (y1 >= y0)
@@ -386,27 +394,6 @@ public:
 		SpawnAsteroidField();
 	}
 
-	void ReadInputs(float dt) 
-	{
-		if (is_key_pressed(VK_LEFT))
-			m_Player.AddAngle(-90 * dt);
-
-		if (is_key_pressed(VK_RIGHT))
-			m_Player.AddAngle(90 * dt);
-
-		if (is_key_pressed(VK_UP))
-		{
-			m_Player.UpdateSpeed(dt);
-		}
-
-		if (is_key_pressed(VK_SPACE) && ShootTimer > ShootCD) 
-		{
-			SpawnBullet();
-			ShootTimer = 0;
-		}
-		ShootTimer += dt;
-	}
-
 	void UpdateGame(float dt)
 	{
 		ReadInputs(dt);
@@ -420,6 +407,7 @@ public:
 
 	void DrawGame() 
 	{
+		// Change color for invincibility
 		if(isInvincible)
 			m_GameBoard.DrawFlyingObject(m_Player, m_GameBoard.m_Invincibility_Color);
 		else
@@ -433,20 +421,35 @@ public:
 	}
 
 private:
+	void ReadInputs(float dt)
+	{
+		if (is_key_pressed(VK_LEFT))
+			m_Player.AddAngle(-90 * dt);
+
+		if (is_key_pressed(VK_RIGHT))
+			m_Player.AddAngle(90 * dt);
+
+		if (is_key_pressed(VK_UP))
+		{
+			m_Player.UpdateSpeed(dt);
+		}
+
+		if (is_key_pressed(VK_SPACE) && ShootTimer > ShootCD)
+		{
+			SpawnBullet();
+			ShootTimer = 0;
+		}
+		ShootTimer += dt;
+	}
+
 	void SpawnBullet()
 	{
+		// Create bullet based on player parameters
 		Flying_Object bullet = Flying_Object(m_Player.GetPosition(), Vec2(sinf(m_Player.GetAngle()*PI / 180), -cosf(m_Player.GetAngle()*PI / 180))*200.0f, 1, 0, m_Bullet_Model);
 		m_Bullets.push_back(bullet);
 	}
 
-	void UpdateObjectPosition(Flying_Object& F_Obj, float dt)
-	{
-		float x, y;
-		Vec2 newPos = F_Obj.UpdatePosition(dt);
-		LoopCoordinates(newPos.x, newPos.y, x, y);
-		F_Obj.SetPosition(Vec2(x, y));
-	}
-
+	// Next 3 just update positions for all objects
 	void UpdatePlayerPosition(float dt) 
 	{
 		UpdateObjectPosition(m_Player, dt);
@@ -470,18 +473,27 @@ private:
 		}
 	}
 
-	Flying_Object CreateAsteroid(const Vec2& Spawn, int Size)
+	void UpdateObjectPosition(Flying_Object& F_Obj, float dt)
 	{
-		float randRadAngle = (float(rand()) / float(RAND_MAX)) * 2 * PI;
-		float randSpeedAmp = 1.0f + (float(rand()) / float(RAND_MAX / (1.0f - 75.0f)));
+		float x, y;
+		Vec2 newPos = F_Obj.UpdatePosition(dt);
+		LoopCoordinates(newPos.x, newPos.y, x, y);
+		F_Obj.SetPosition(Vec2(x, y));
+	}
 
-		Vec2 Speed = Vec2(sinf(randRadAngle), cosf(randRadAngle)) * randSpeedAmp;
-		Flying_Object Rock = Flying_Object(Spawn, Speed, Size, randRadAngle, m_Asteroid_Model);
-		return Rock;
+	void LoopCoordinates(float in_x, float in_y, float& out_x, float& out_y)
+	{
+		out_x = in_x;
+		out_y = in_y;
+		if (in_x < 0) out_x = in_x + SCREEN_WIDTH;
+		if (in_x >= SCREEN_WIDTH) out_x = in_x - SCREEN_WIDTH;
+		if (in_y < 0) out_y = in_y + SCREEN_HEIGHT;
+		if (in_y >= SCREEN_HEIGHT) out_y = in_y - SCREEN_HEIGHT;
 	}
 
 	void CheckInteractions(float dt)
 	{
+		// Check all bullet-asteroid pairs for collisions (not perfect as created asteroids can't be hit)
 		std::vector<Flying_Object>::iterator bullet = m_Bullets.begin();
 
 		while (bullet != m_Bullets.end())
@@ -494,8 +506,10 @@ private:
 				++bullet;
 		}
 		
+		// Player-asteroid collision
 		CheckPlayerAsteroidCollision(dt);
 
+		// If no asteroids left restart the game
 		if (m_Asteroids.empty()) 
 		{
 			SpawnAsteroidField();
@@ -506,6 +520,7 @@ private:
 	{
 		bool flag = false;
 
+		// Iterate over all asteroids, if hit destrou asteroid and create 2 new
 		std::vector<Flying_Object> newAsteroids;
 		std::vector<Flying_Object>::iterator asteroid = m_Asteroids.begin();
 		while (asteroid != m_Asteroids.end())
@@ -525,6 +540,7 @@ private:
 				++asteroid;
 		}
 
+		// Add created asteroids to vector
 		for (std::vector<Flying_Object>::iterator asteroid = newAsteroids.begin(); asteroid != newAsteroids.end(); asteroid++)
 		{
 			m_Asteroids.push_back(*asteroid);
@@ -533,13 +549,9 @@ private:
 		return flag;
 	}
 
-	bool CheckCollision(const Vec2& obj1, const Vec2& obj2, float limit) 
-	{
-		return (obj1 - obj2).Length() < limit;
-	}
-
 	bool CheckPlayerAsteroidCollision(float dt) 
 	{
+		// Loose health if healthy and not invincible
 		bool isColliding = std::any_of(m_Asteroids.begin(), m_Asteroids.end(), [&](const Flying_Object& a) {return CheckCollision(a.GetPosition(), m_Player.GetPosition(), (a.GetSize() + m_Player.GetSize())); });
 		if (isColliding)
 		{
@@ -555,6 +567,7 @@ private:
 				}
 			}
 		}
+		// Update invincibility status
 		if (isInvincible)
 		{
 			InvincibilityTimer += dt;
@@ -567,8 +580,14 @@ private:
 		return isColliding;
 	}
 
+	bool CheckCollision(const Vec2& obj1, const Vec2& obj2, float limit)
+	{
+		return (obj1 - obj2).Length() < limit;
+	}
+
 	void Loose() 
 	{
+		// Basically restart
 		m_GameBoard.Clear();
 
 		m_Player = Shuttle(Vec2(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2), Vec2(), 10, 0.0f, 50);
@@ -598,14 +617,15 @@ private:
 		}
 	}
 
-	void LoopCoordinates(float in_x, float in_y, float& out_x, float& out_y)
+	Flying_Object CreateAsteroid(const Vec2& Spawn, int Size)
 	{
-		out_x = in_x;
-		out_y = in_y;
-		if (in_x < 0) out_x = in_x + SCREEN_WIDTH;
-		if (in_x >= SCREEN_WIDTH) out_x = in_x - SCREEN_WIDTH;
-		if (in_y < 0) out_y = in_y + SCREEN_HEIGHT;
-		if (in_y >= SCREEN_HEIGHT) out_y = in_y - SCREEN_HEIGHT;
+		// Generate random parameters for asteroid
+		float randRadAngle = (float(rand()) / float(RAND_MAX)) * 2 * PI;
+		float randSpeedAmp = 1.0f + (float(rand()) / float(RAND_MAX / (1.0f - 75.0f)));
+
+		Vec2 Speed = Vec2(sinf(randRadAngle), cosf(randRadAngle)) * randSpeedAmp;
+		Flying_Object Rock = Flying_Object(Spawn, Speed, Size, randRadAngle, m_Asteroid_Model);
+		return Rock;
 	}
 };
 
